@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.idea/
+arm-duplisearcher-dispatcher/.idea/
+arm-duplisearcher-shard/.idea/
+arm-duplisearcher-dispatcher/__pycache__/
+arm-duplisearcher-shard/__pycache__/
+

@@ -1,0 +1,10 @@
+flask
+waitress
+flask_restplus
+Werkzeug==0.16.1
+scipy
+pandas
+markupsafe==2.0.1
+pymystem3
+gensim
+sklearn

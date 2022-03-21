@@ -1,0 +1,31 @@
+version: "3.9"
+services:
+  dispatcher:
+    image: arm-duplisearcher-dispatcher
+    ports:
+    - "7000:7000"
+
+  shard1:
+    image: arm-duplisearcher-shard
+    ports:
+    - "7001:8080"
+
+  shard2:
+    image: arm-duplisearcher-shard
+    ports:
+    - "7002:8080"
+
+  shard3:
+    image: arm-duplisearcher-shard
+    ports:
+    - "7003:8080"
+
+  shard4:
+    image: arm-duplisearcher-shard
+    ports:
+    - "7004:8080"
+
+  shard5:
+    image: arm-duplisearcher-shard
+    ports:
+    - "7005:8080"
