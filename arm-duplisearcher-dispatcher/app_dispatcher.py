@@ -100,8 +100,10 @@ api = Api(app)
 name_space = api.namespace('api', 'На вход поступает JSON, возвращает JSON')
 
 query = name_space.model("One Query",
-                         {"id": fields.String(description="query's Id", required=True),
-                          "clusters": fields.List(fields.String(description="query's text", required=True))})
+                         {"id": fields.Integer(description="query's Id", required=True),
+                          "clusters": fields.List(fields.String(description="query's text", required=True)),
+                          "moduleId": fields.Integer,
+                          "pubIds": fields.List(fields.Integer)})
 
 input_data = name_space.model("Input JSONs",
                               {"score": fields.Float(description="The similarity coefficient", required=True),
