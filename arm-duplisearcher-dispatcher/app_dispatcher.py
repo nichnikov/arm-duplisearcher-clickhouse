@@ -11,9 +11,17 @@ from texts_processing import TextsTokenizer
 from collections import namedtuple
 from itertools import groupby, chain
 
-
 # how to numpy array to json: https://pynative.com/python-serialize-numpy-ndarray-into-json/
-logging.basicConfig()
+"""
+# writing to file:
+logging.basicConfig(filename="test.log", filemode="a",
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S')"""
+
+# writing to terminal:
+logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S')
+
 logger = logging.getLogger("app_dispatcher")
 logger.setLevel(logging.INFO)
 
@@ -39,6 +47,7 @@ def sender(url_data: ()):
 
 def resulting_report(searched_data, result_tuples, found_dicts_l):
     """"""
+
     def grouping(similarity_items, searched_queries, searched_answers_moduls):
         """"""
         return [{"id": k1, "moduleId": searched_answers_moduls[k1], "clustersWithDuplicate":
@@ -100,10 +109,10 @@ api = Api(app)
 name_space = api.namespace('api', 'На вход поступает JSON, возвращает JSON')
 
 answer = name_space.model("One Answer",
-                         {"id": fields.Integer(description="query's Id", required=True),
-                          "clusters": fields.List(fields.String(description="query's text", required=True)),
-                          "moduleId": fields.Integer,
-                          "pubIds": fields.List(fields.Integer)})
+                          {"id": fields.Integer(description="query's Id", required=True),
+                           "clusters": fields.List(fields.String(description="query's text", required=True)),
+                           "moduleId": fields.Integer,
+                           "pubIds": fields.List(fields.Integer)})
 
 input_data = name_space.model("Input JSONs",
                               {"score": fields.Float(description="The similarity coefficient", required=True),
@@ -113,6 +122,7 @@ input_data = name_space.model("Input JSONs",
 
 load_dotenv(".env")
 URLS = os.environ.get("URLS")
+# URLS = "url1,url1"
 if URLS is None:
     raise Exception('Env var URLS not defined')
 
@@ -135,46 +145,65 @@ class ShardsHandling(Resource):
                 queries += [(str(uuid4()), d["id"], d["moduleId"], tx, d["pubIds"]) for tx in d["clusters"]]
 
             if json_data["operation"] == "add":
-                queries_with_tokens = add_tokens(tokenizer, queries)
-                chunk_size = len(queries) // len(urls) + 1
-                urls_data = [(url, {"data": chunk, "operation": "add"}) for
-                             url, chunk in zip(urls, chunks_split(queries_with_tokens, chunk_size))]
-                respons = pool.map(sender, urls_data)
-                pool.close()
-                pool.join()
-                logger.info(str(respons))
+                try:
+                    queries_with_tokens = add_tokens(tokenizer, queries)
+                    chunk_size = len(queries) // len(urls) + 1
+                    urls_data = [(url, {"data": chunk, "operation": "add"}) for
+                                 url, chunk in zip(urls, chunks_split(queries_with_tokens, chunk_size))]
+                    respons = pool.map(sender, urls_data)
+                    pool.close()
+                    pool.join()
+                    logger.info(str(respons))
+                    return True
+                except:
+                    logger.exception("add data")
+                    return False
 
             elif json_data["operation"] == "delete":
-                queries_with_tokens = add_tokens(tokenizer, queries)
-                urls_data = [(url, {"data": queries_with_tokens, "operation": "delete"}) for url in urls]
-                respons = pool.map(sender, urls_data)
-                pool.close()
-                pool.join()
-                logger.info(respons)
+                try:
+                    queries_with_tokens = add_tokens(tokenizer, queries)
+                    urls_data = [(url, {"data": queries_with_tokens, "operation": "delete"}) for url in urls]
+                    respons = pool.map(sender, urls_data)
+                    pool.close()
+                    pool.join()
+                    logger.info(str(respons))
+                    return True
+                except:
+                    logger.exception("delete")
+                    return False
 
             elif json_data["operation"] == "update":
-                queries_with_tokens = add_tokens(tokenizer, queries)
-                urls_data = [(url, {"data": queries_with_tokens, "operation": "update"}) for url in urls]
-                respons = pool.map(sender, urls_data)
-                pool.close()
-                pool.join()
-                logger.info(respons)
 
+                try:
+                    queries_with_tokens = add_tokens(tokenizer, queries)
+                    urls_data = [(url, {"data": queries_with_tokens, "operation": "update"}) for url in urls]
+                    respons = pool.map(sender, urls_data)
+                    pool.close()
+                    pool.join()
+                    logger.info(str(respons))
+                    return True
+                except:
+                    logger.exception("update")
+                    return False
             elif json_data["operation"] == "search":
-                if "score" in json_data:
-                    queries_with_tokens = add_tokens(tokenizer, queries)
-                    urls_data = [(url, {"data": queries_with_tokens, "operation": "search",
-                                        "score": json_data["score"]}) for url in urls]
-                else:
-                    queries_with_tokens = add_tokens(tokenizer, queries)
-                    urls_data = [(url, {"data": queries_with_tokens, "operation": "search"}) for url in urls]
-                respons = pool.map(sender, urls_data)
-                pool.close()
-                pool.join()
-                all_tuples, main_dict = result_aggregate(respons)
-                if all_tuples:
-                    return resulting_report(queries_with_tokens, all_tuples, main_dict)
-                else:
+                try:
+                    if "score" in json_data:
+                        queries_with_tokens = add_tokens(tokenizer, queries)
+                        urls_data = [(url, {"data": queries_with_tokens, "operation": "search",
+                                            "score": json_data["score"]}) for url in urls]
+                    else:
+                        queries_with_tokens = add_tokens(tokenizer, queries)
+                        urls_data = [(url, {"data": queries_with_tokens, "operation": "search"}) for url in urls]
+                    respons = pool.map(sender, urls_data)
+                    pool.close()
+                    pool.join()
+                    all_tuples, main_dict = result_aggregate(respons)
+                    if all_tuples:
+                        return resulting_report(queries_with_tokens, all_tuples, main_dict)
+                    else:
+                        return []
+                except:
+                    logger.exception("search")
                     return []
         else:
             return None
